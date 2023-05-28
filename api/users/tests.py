@@ -53,16 +53,39 @@ def test_user_flow(admin_client: 'APIClient', anon_client: 'APIClient'):
 
     Пример создания данных для рандомных пользователей.
 
-    users_count = 20
+    """
+    USERS_COUNT = 20
     users_data = [
         {
             'username': f'user_{i}',
             'password': f'password_{i}',
             'email': f'email_{i}@mail.ru',
         }
-        for i in range(users_count)
+        for i in range(USERS_COUNT)
     ]
 
-    """
+    for user in users_data:
+        response = admin_client.post(
+            '/api/v1/users/',
+            data=user,
+        )
+        assert response.status_code == 201
 
-    ...
+    response = admin_client.get(
+        '/api/v1/users/',
+    )
+    assert response.status_code == 200
+    assert response.data.get('count') == USERS_COUNT
+
+    for user in users_data:
+        response = anon_client.post(
+            f'/api/auth/login/',
+            data={'username': user["username"], 'password': user["password"]},
+        )
+        assert response.status_code == 200
+
+    for id in range(2, USERS_COUNT + 2):
+        response = admin_client.delete(
+            f'/api/v1/users/{id}/',
+        )
+        assert response.status_code == 204
